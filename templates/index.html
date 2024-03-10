@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>ChatGPT Chat App</title>
+    <style>
+        .title {
+            color: red;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="title">Your startup Name AI Tutorial</div>
+    <div class="info">Model Name: {{ model_name }}</div>
+    <div class="info">Port: {{ port }}</div>
+
+    <div>
+        <textarea id="userInput" placeholder="Type your message..."></textarea>
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+    <div id="chatLog"></div>
+
+    <script>
+        function sendMessage() {
+            let message = document.getElementById('userInput').value;
+
+            fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message: message })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('chatLog').innerHTML += '<div>User: ' + message + '</div>';
+                    document.getElementById('chatLog').innerHTML += '<div>ChatGPT: ' + data.response + '</div>';
+                    document.getElementById('userInput').value = '';
+                });
+        }
+    </script>
+
+</body>
+
+</html>
