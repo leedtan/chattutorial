@@ -1,6 +1,9 @@
 Virtual environment:
 venv/
 
+secrets:
+keys.py
+
 Python artifacts:
 pycache/
 *.pyc
