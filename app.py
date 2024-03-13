@@ -16,12 +16,13 @@ Session(app)
 
 echo_bot = EchoBot()
 
-model_name = "gpt-3.5-turbo"
 openai.api_key = os.getenv("OPENAI_API_KEY")
 if not openai.api_key:
     from keys import OPENAI_API_KEY
+
     openai.api_key = OPENAI_API_KEY
 api_bot = ApiBot("gpt-3.5-turbo", openai)
+
 
 @app.route("/")
 def home():
@@ -30,6 +31,7 @@ def home():
     model_name = "gpt-3.5-turbo"
     port = 5000
     return render_template("index.html", model_name=model_name, port=port)
+
 
 @app.route("/chat", methods=["POST"])
 def chat():
@@ -46,6 +48,7 @@ def chat():
     reply = chatbot.get_response(message, conversation_history)
     session["conversation_history"] = conversation_history
     return jsonify({"response": reply})
+
 
 if __name__ == "__main__":
     app.run(debug=True)
