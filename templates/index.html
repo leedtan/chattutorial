@@ -22,6 +22,10 @@
     <div class="info">Port: {{ port }}</div>
 
     <div>
+        <select id="botSelector">
+            <option value="echo">Echo Bot</option>
+            <option value="api">API Bot</option>
+        </select>
         <textarea id="userInput" placeholder="Type your message..."></textarea>
         <button onclick="sendMessage()">Send</button>
     </div>
@@ -31,13 +35,14 @@
     <script>
         function sendMessage() {
             let message = document.getElementById('userInput').value;
+            let botType = document.getElementById('botSelector').value;
 
             fetch('/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ message: message })
+                body: JSON.stringify({ message: message, bot_type: botType })
             })
                 .then(response => response.json())
                 .then(data => {
