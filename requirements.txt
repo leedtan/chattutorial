@@ -1,1 +1,7 @@
-Flask==2.0.1
+Flask
+pytest==8.1.1
+openai==1.13.3
+Flask-Session==0.6.0
+python-dotenv==1.0.1
+# For monkeypatch
+pytest-mock==3.12.0
