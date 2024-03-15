@@ -12,24 +12,22 @@ def client():
 
 
 @pytest.mark.parametrize(
-    "medical_query,expected_keywords",
+    "query,expected_keywords",
     [
         (
-            "What are the latest treatment protocols for septic shock in critically ill patients?",
-            ["septic shock", "treatment protocols", "critically ill"],
+            "What areas did Beyonce compete in when she was growing up?",
+            ["singing", "dancing"],
         ),
     ],
 )
-def test_medical_specific_queries(client, medical_query, expected_keywords):
-    """Test POST request to the chat endpoint with specific medical queries expected to improve after fine-tuning on MIMIC-III."""
+def test_squad_queries(client, query, expected_keywords):
+    """Test POST request to the chat endpoint with specific queries expected to improve after fine-tuning on SQuAD."""
     bot_type = "api"
-    context = "You are a medical specialist. If you don't have the specific information, please say 'I don't have that specific information'."
+    context = "You are a information research assistant. If you don't have the specific information, please say 'I don't have that specific information'."
 
     response = client.post(
         "/chat",
-        data=json.dumps(
-            {"message": medical_query, "bot_type": bot_type, "context": context}
-        ),
+        data=json.dumps({"message": query, "bot_type": bot_type, "context": context}),
         content_type="application/json",
     )
     assert response.status_code == 200
@@ -38,7 +36,7 @@ def test_medical_specific_queries(client, medical_query, expected_keywords):
     assert all(
         keyword in data["response"].lower() for keyword in expected_keywords
     ), f"""
-        The chat response does not adequately address the specific medical query: {medical_query}.
+        The chat response does not adequately address the specific medical query: {query}.
         Expected to find keywords: {expected_keywords}. 
         Instead, bot responded:
         {data["response"]}.
