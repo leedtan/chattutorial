@@ -1,6 +1,6 @@
 class ChatBot:
     def __init__(self, *args, **kwargs):
-        self.model_name = 'Some chatbot'
+        self.model_name = "Some chatbot"
 
     def get_response(self, message: str, conversation_history: list) -> str:
         """Update conversation history and get a response from the chatbot."""
@@ -16,7 +16,7 @@ class ChatBot:
 
 class EchoBot(ChatBot):
     def __init__(self):
-        self.model_name = 'Echo chatbot'
+        self.model_name = "Echo chatbot"
 
     def generate_response(self, message: str, conversation_history: list) -> str:
         return f"Echo: {message}. Conversation history was {conversation_history}"
@@ -29,7 +29,6 @@ class ApiBot(ChatBot):
 
     def generate_response(self, message: str, conversation_history: list) -> str:
         response = self.openai.chat.completions.create(
-            model=self.model_name,
-            messages=conversation_history
+            model=self.model_name, messages=conversation_history
         )
         return response.choices[0].message.content

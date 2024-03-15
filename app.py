@@ -41,7 +41,11 @@ def chat():
 
     bot_type = data["bot_type"]
     message = data["message"]
+    context = data.get("context", "")
     conversation_history = session.get("conversation_history", [])
+
+    if context and len(conversation_history) == 0:
+        conversation_history.append({"role": "user", "content": context})
 
     chatbot = api_bot if bot_type == "api" else echo_bot
 
