@@ -2,6 +2,8 @@ Virtual environment:
 venv/
 
 flask_session/
+*.log
+*.jsonl
 
 secrets:
 keys.py

@@ -32,3 +32,26 @@ class ApiBot(ChatBot):
             model=self.model_name, messages=conversation_history
         )
         return response.choices[0].message.content
+
+
+class FineTuneBot(ChatBot):
+    def __init__(self, openai):
+        super().__init__()
+        self.openai = openai
+        self.model_name = self.get_latest_finetuned_model()
+
+    def get_latest_finetuned_model(self):
+        fine_tunes = self.openai.client.fine_tuning.jobs.list()
+        for job in fine_tunes.data:
+            if job.status == "succeeded":
+                return job.fine_tuned_model
+        raise Exception("No successful fine-tuned models found.")
+
+    def generate_response(self, message: str, conversation_history: list) -> str:
+        response = self.openai.Completion.create(
+            model=self.model_name,
+            prompt=message,
+            max_tokens=3000,
+            stop=None,
+        )
+        return response.choices[0].text

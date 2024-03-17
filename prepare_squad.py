@@ -12,6 +12,7 @@ def download_squad(version="2.0"):
 
 def prepare_data_for_openai(data):
     prepared_data = []
+    conversation = {"messages": []}
     for article in data["data"]:
         for paragraph in article["paragraphs"]:
             context = paragraph["context"]
@@ -20,21 +21,37 @@ def prepare_data_for_openai(data):
                 answer = (
                     qa["answers"][0]["text"] if qa["answers"] else "No answer found."
                 )
-                prepared_data.append(
+
+                # Add system, user, and assistant messages to the conversation
+                conversation["messages"].append(
                     {
-                        "prompt": f"Context: {context}\n\nQuestion: {question}\nAnswer:",
-                        "completion": f" {answer}",
+                        "role": "system",
+                        "content": "Answer the question based on the context.",
                     }
                 )
+                conversation["messages"].append(
+                    {
+                        "role": "user",
+                        "content": f"Context: {context}\nQuestion: {question}",
+                    }
+                )
+                conversation["messages"].append(
+                    {"role": "assistant", "content": answer}
+                )
+
+                # Add the full conversation to prepared_data and start a new conversation
+                prepared_data.append(conversation)
+                conversation = {"messages": []}
+
     return prepared_data
 
 
-# Download and prepare the SQuAD data
+# Assuming you have a function download_squad to download the SQuAD data
 squad_data = download_squad()
 prepared_data = prepare_data_for_openai(squad_data)
 
 # Save the prepared data to a JSONL file
-with open("squad_for_openai.jsonl", "w") as outfile:
+with open("squad_for_openai_chat.jsonl", "w") as outfile:
     for entry in prepared_data:
         json.dump(entry, outfile)
         outfile.write("\n")
