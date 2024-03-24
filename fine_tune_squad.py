@@ -3,10 +3,9 @@ import os
 
 import openai
 
-# Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
 logger = logging.getLogger()
-# File handler for logging
+
 file_handler = logging.FileHandler("fine_tuning.log")
 logger.addHandler(file_handler)
 
@@ -20,11 +19,6 @@ client = openai.Client(api_key=openai.api_key)
 
 
 def fine_tune_model(training_file_id):
-    # response = client.fine_tunes.create(
-    #     training_file_id=training_file_id,
-    #     model="gpt-3.5-turbo",
-    #     n_epochs=3,
-    # )
 
     response = client.fine_tuning.jobs.create(
         training_file=training_file_id, model="gpt-3.5-turbo"
@@ -39,7 +33,7 @@ def upload_file(file_path):
 
 
 try:
-    file_id = upload_file("squad_for_openai_chat.jsonl")
+    file_id = upload_file("squad_for_openai_raw.jsonl")
     logger.info(f"Uploaded file ID: {file_id}")
 
     fine_tuning_response = fine_tune_model(file_id)

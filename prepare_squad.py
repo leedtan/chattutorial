@@ -1,6 +1,6 @@
 import json
 import re
-
+from unidecode import unidecode
 import requests
 
 
@@ -12,17 +12,18 @@ def download_squad(version="2.0"):
 
 
 def clean_text(text):
-    cleaned_text = re.sub(r"[^\x00-\x7F]+", "", text)
-    cleaned_text = cleaned_text.strip()
+    cleaned_text = text.strip()
     return cleaned_text
 
 
 def prepare_data_for_openai(data):
-    prepared_data = []
+    preparing_data = []
     conversation = {"messages": []}
     for article in data["data"]:
         for paragraph in article["paragraphs"]:
             context = clean_text(paragraph["context"])
+            # if all(wd not in context.lower() for wd in ['beyonc', 'destiny', 'rhee']):
+            #     continue
             for qa in paragraph["qas"]:
                 question = clean_text(qa["question"])
                 answer = (
@@ -31,7 +32,6 @@ def prepare_data_for_openai(data):
                     else "No answer found."
                 )
 
-                # Add system, user, and assistant messages to the conversation
                 conversation["messages"].append(
                     {
                         "role": "system",
@@ -41,26 +41,23 @@ def prepare_data_for_openai(data):
                 conversation["messages"].append(
                     {
                         "role": "user",
-                        "content": f"Context: {context[:200]}\nQuestion: {question[:100]}",
+                        "content": f"Context: {context[:2000]}\nQuestion: {question[:1000]}",
                     }
                 )
                 conversation["messages"].append(
-                    {"role": "assistant", "content": answer[:100]}
+                    {"role": "assistant", "content": answer[:1000]}
                 )
 
-                # Add the full conversation to prepared_data and start a new conversation
-                prepared_data.append(conversation)
+                preparing_data.append(conversation)
                 conversation = {"messages": []}
 
-    return prepared_data
+    return preparing_data
 
 
-# Assuming you have a function download_squad to download the SQuAD data
 squad_data = download_squad()
 prepared_data = prepare_data_for_openai(squad_data)
 
-# Save the prepared data to a JSONL file
-with open("squad_for_openai_chat_clip.jsonl", "w") as outfile:
+with open("squad_for_openai_raw.jsonl", "w") as outfile:
     for entry in prepared_data:
         json.dump(entry, outfile)
         outfile.write("\n")

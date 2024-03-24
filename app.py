@@ -4,7 +4,7 @@ import os
 import openai
 from flask import Flask, jsonify, render_template, request, session
 
-from chatbots import ApiBot, EchoBot, FineTuneBot
+from chatbots import ApiBot, EchoBot, FineTuneBot, LocalLLMBot
 from flask_session import Session
 
 logging.basicConfig(level=logging.DEBUG)
@@ -24,6 +24,7 @@ if not openai.api_key:
 api_bot = ApiBot("gpt-3.5-turbo", openai)
 openai.client = openai.Client(api_key=openai.api_key)
 fine_tune_bot = FineTuneBot(openai)
+llm_bot = LocalLLMBot()
 
 
 @app.route("/")
@@ -48,11 +49,17 @@ def chat():
 
     if context and len(conversation_history) == 0:
         conversation_history.append({"role": "user", "content": context})
-    chatbot = {"api": api_bot, "echo": echo_bot, "fine_tune": fine_tune_bot}[bot_type]
+    chatbot = {"api": api_bot, "echo": echo_bot, "fine_tune": fine_tune_bot, "local_llm": llm_bot}[bot_type]
 
     reply = chatbot.get_response(message, conversation_history)
     session["conversation_history"] = conversation_history
     return jsonify({"response": reply})
+
+
+@app.route("/reset", methods=["POST"])
+def reset():
+    session.pop("conversation_history", None)
+    return jsonify({"status": "reset complete"}), 200
 
 
 if __name__ == "__main__":
