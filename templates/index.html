@@ -25,10 +25,13 @@
         <select id="botSelector">
             <option value="echo">Echo Bot</option>
             <option value="api">API Bot</option>
+            <option value="local_llm">LocalLLM Bot</option>
+            <option value="fine_tune">Fine-Tuned Bot on SQuAD</option>
         </select>
         <textarea id="userInput" placeholder="Type your message..."></textarea>
         <button onclick="sendMessage()">Send</button>
     </div>
+    <button onclick="resetConversation()">Reset Conversation</button>
 
     <div id="chatLog"></div>
 
@@ -51,6 +54,20 @@
                     document.getElementById('userInput').value = '';
                 });
         }
+        function resetConversation() {
+            fetch('/reset', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('chatLog').innerHTML = '';
+                    console.log('Conversation reset:', data.status);
+                });
+        }
+
     </script>
 
 </body>

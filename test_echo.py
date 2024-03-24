@@ -16,6 +16,7 @@ def client():
     [
         ("echo", "echo:"),
         ("api", "thank you"),
+        ("local_llm", "thank you"),
     ],
 )
 def test_chat_response(client, bot_type, expected_in_response):
@@ -23,7 +24,10 @@ def test_chat_response(client, bot_type, expected_in_response):
     response = client.post(
         "/chat",
         data=json.dumps(
-            {"message": "Please respond by thanking me", "bot_type": bot_type}
+            {
+                "message": "You are a greeting agent. Please respond by thanking me",
+                "bot_type": bot_type,
+            }
         ),
         content_type="application/json",
     )
