@@ -1,6 +1,4 @@
-import os
 import subprocess
-import logging
 import json
 
 ENABLE_LOCAL = True
@@ -15,6 +13,10 @@ if ENABLE_LOCAL:
 
 
 class ChatBot:
+    """
+    Chatbot that builds message into conversation history
+    """
+
     def __init__(self, *args, **kwargs):
         self.model_name = "Some chatbot"
 
@@ -31,6 +33,10 @@ class ChatBot:
 
 
 class EchoBot(ChatBot):
+    """
+    Simple chatbot that echoes the input message.
+    """
+
     def __init__(self):
         self.model_name = "Echo chatbot"
 
@@ -39,6 +45,10 @@ class EchoBot(ChatBot):
 
 
 class ApiBot(ChatBot):
+    """
+    Chatbot using OpenAI's API.
+    """
+
     def __init__(self, model_name: str, openai):
         self.openai = openai
         self.model_name = model_name
@@ -53,12 +63,20 @@ class ApiBot(ChatBot):
 
 
 class FineTuneBot(ChatBot):
+    """
+    Chatbot using a fine-tuned model from OpenAI's API.
+    """
+
     def __init__(self, openai):
         super().__init__()
         self.openai = openai
         self.model_name = self.get_latest_finetuned_model()
 
     def get_latest_finetuned_model(self):
+        """
+        Get the latest fine-tuned model from OpenAI's API.
+        Messy for now due to hacks I'm putting in as we debug and measure and iterate on measuring data prep practices
+        """
         fine_tunes = self.openai.client.fine_tuning.jobs.list()
         winner = None
         for job in fine_tunes.data:
@@ -87,21 +105,17 @@ class FineTuneBot(ChatBot):
 
 
 class LocalLLMBot(ChatBot):
+    """
+    Local chatbot using Hugging Face's transformers library.
+    """
+
     def __init__(
         self, model_name="microsoft/DialoGPT-medium", model_path="./models/dialogpt/"
     ):
         super().__init__()
         self.model_name = model_name
         self.model_path = model_path
-        self._check_and_install_dependencies()
         self._setup_model()
-
-    def _check_and_install_dependencies(self):
-        try:
-            import transformers
-        except ImportError:
-            subprocess.run(["pip", "install", "transformers"])
-            import transformers
 
     def _setup_model(self):
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
@@ -113,7 +127,7 @@ class LocalLLMBot(ChatBot):
             input_text += f"{turn['role']}: {turn['content']}\n"
         input_text += "assistant:"
         input_ids = self.tokenizer.encode(input_text, return_tensors="pt")
-        output = self.model.generate(input_ids, max_length=150, num_return_sequences=1)
+        output = self.model.generate(input_ids, max_length=1000, num_return_sequences=1)
         response_text = self.tokenizer.decode(output[0], skip_special_tokens=True)
         if "assistant:" in response_text:
             assistant_response = response_text.split("assistant:")[-1].strip()
