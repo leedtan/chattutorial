@@ -1,15 +1,15 @@
 import subprocess
 import json
 
-ENABLE_LOCAL = True
-if ENABLE_LOCAL:
-    try:
-        import transformers
-        from transformers import AutoModelForCausalLM, AutoTokenizer
-    except:
-        subprocess.run(["pip", "install", "transformers"])
-        import transformers
-        from transformers import AutoModelForCausalLM, AutoTokenizer
+import transformers
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from langchain.llms import HuggingFaceHub
+from langchain.document_loaders import WebBaseLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.vectorstores import FAISS
+from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.chains import ConversationalRetrievalChain
+from langchain.memory import ConversationSummaryMemory
 
 
 class ChatBot:
@@ -86,7 +86,6 @@ class FineTuneBot(ChatBot):
                 winner = job.fine_tuned_model
                 if file_details.filename in [
                     "squad_for_openai_chat_clip.jsonl",
-                    "squad_for_openai_raw.jsonl",
                 ]:
                     return winner
         if winner is not None:
@@ -134,3 +133,38 @@ class LocalLLMBot(ChatBot):
         else:
             assistant_response = response_text.strip()
         return json.dumps({"response": assistant_response})
+
+
+class RAGBot(ChatBot):
+    def __init__(self, llm_repo_id, web_loader_url, embedding_model_name, hf_api_key):
+        super().__init__()
+        self.model_name = llm_repo_id
+        self.loader = WebBaseLoader(web_loader_url)
+        self.embedding_model_name = embedding_model_name
+        self._hf_api_key = hf_api_key
+        self._setup_chain()
+
+    def _setup_chain(self):
+        data = self.loader.load()
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=0)
+        all_splits = text_splitter.split_documents(data)
+
+        hf_embeddings = HuggingFaceEmbeddings(model_name=self.embedding_model_name)
+        vectorstore = FAISS.from_documents(
+            documents=all_splits, embedding=hf_embeddings
+        )
+
+        llm = HuggingFaceHub(
+            repo_id=self.model_name, huggingfacehub_api_token=self._hf_api_key
+        )
+        memory = ConversationSummaryMemory(
+            llm=llm, memory_key="chat_history", return_messages=True
+        )
+
+        self.chat_chain = ConversationalRetrievalChain.from_llm(
+            llm=llm, retriever=vectorstore.as_retriever(), memory=memory, verbose=True
+        )
+
+    def generate_response(self, message: str, conversation_history: list) -> str:
+        response = self.chat_chain(message)
+        return json.dumps({"response": response})

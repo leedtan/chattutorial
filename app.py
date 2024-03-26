@@ -4,7 +4,7 @@ import os
 import openai
 from flask import Flask, jsonify, render_template, request, session
 
-from chatbots import ApiBot, EchoBot, FineTuneBot, LocalLLMBot
+from chatbots import ApiBot, EchoBot, FineTuneBot, LocalLLMBot, RAGBot
 from flask_session import Session
 
 logging.basicConfig(level=logging.DEBUG)
@@ -25,6 +25,11 @@ api_bot = ApiBot("gpt-3.5-turbo", openai)
 openai.client = openai.Client(api_key=openai.api_key)
 fine_tune_bot = FineTuneBot(openai)
 llm_bot = LocalLLMBot()
+rag_bot = RAGBot(
+    llm_repo_id="google/flan-t5-large",
+    web_loader_url="http://jalammar.github.io/illustrated-transformer/",
+    embedding_model_name="sentence-transformers/all-mpnet-base-v2",
+)
 
 
 @app.route("/")
@@ -49,7 +54,13 @@ def chat():
 
     if context and len(conversation_history) == 0:
         conversation_history.append({"role": "user", "content": context})
-    chatbot = {"api": api_bot, "echo": echo_bot, "fine_tune": fine_tune_bot, "local_llm": llm_bot}[bot_type]
+    chatbot = {
+        "api": api_bot,
+        "echo": echo_bot,
+        "fine_tune": fine_tune_bot,
+        "local_llm": llm_bot,
+        "rag": rag_bot,
+    }[bot_type]
 
     reply = chatbot.get_response(message, conversation_history)
     session["conversation_history"] = conversation_history

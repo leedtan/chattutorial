@@ -17,6 +17,7 @@ def client():
         ("echo", "echo:"),
         ("api", "thank you"),
         ("local_llm", "thank you"),
+        ("rag", "thank you"),
     ],
 )
 def test_chat_response(client, bot_type, expected_in_response):

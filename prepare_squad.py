@@ -12,7 +12,7 @@ def download_squad(version="2.0"):
 
 
 def clean_text(text):
-    cleaned_text = text.strip()
+    cleaned_text = unidecode(text).strip()
     return cleaned_text
 
 
@@ -57,7 +57,7 @@ def prepare_data_for_openai(data):
 squad_data = download_squad()
 prepared_data = prepare_data_for_openai(squad_data)
 
-with open("squad_for_openai_raw.jsonl", "w") as outfile:
+with open("squad_for_openai_clean.jsonl", "w") as outfile:
     for entry in prepared_data:
         json.dump(entry, outfile)
         outfile.write("\n")
