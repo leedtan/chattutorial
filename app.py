@@ -25,11 +25,18 @@ api_bot = ApiBot("gpt-3.5-turbo", openai)
 openai.client = openai.Client(api_key=openai.api_key)
 fine_tune_bot = FineTuneBot(openai)
 llm_bot = LocalLLMBot()
-rag_bot = RAGBot(
-    llm_repo_id="google/flan-t5-large",
-    web_loader_url="http://jalammar.github.io/illustrated-transformer/",
-    embedding_model_name="sentence-transformers/all-mpnet-base-v2",
-)
+HF_API_KEY = os.getenv("HF_API_KEY")
+if not HF_API_KEY:
+    from keys import HF_API_KEY
+
+
+# rag_bot = RAGBot(
+#     llm_repo_id="google/flan-t5-large",
+#     web_loader_url="http://jalammar.github.io/illustrated-transformer/",
+#     embedding_model_name="facebook/rag-token-nq",
+#     hf_api_key=HF_API_KEY,
+# )
+rag_bot = RAGBot(hf_api_key=HF_API_KEY)
 
 
 @app.route("/")

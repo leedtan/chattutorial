@@ -1,15 +1,21 @@
-import subprocess
 import json
+import subprocess
 
 import transformers
-from transformers import AutoModelForCausalLM, AutoTokenizer
-from langchain.llms import HuggingFaceHub
+from langchain.chains import ConversationalRetrievalChain, RetrievalQA
 from langchain.document_loaders import WebBaseLoader
+from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.llms import HuggingFaceHub
+from langchain.memory import ConversationSummaryMemory
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import FAISS
-from langchain.embeddings import HuggingFaceEmbeddings
-from langchain.chains import ConversationalRetrievalChain
-from langchain.memory import ConversationSummaryMemory
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    RagSequenceForGeneration,
+    RagTokenForGeneration,
+    RagTokenizer,
+)
 
 
 class ChatBot:
@@ -136,35 +142,63 @@ class LocalLLMBot(ChatBot):
 
 
 class RAGBot(ChatBot):
-    def __init__(self, llm_repo_id, web_loader_url, embedding_model_name, hf_api_key):
+    def __init__(
+        self,
+        hf_api_key,
+        web_loader_url=None,
+        emb_model_name=None,
+        llm_repo_id=None,
+    ):
+        dataset_path = "squad_for_openai_chat_clip.jsonl"
         super().__init__()
-        self.model_name = llm_repo_id
+        web_loader_url = (
+            web_loader_url or "http://jalammar.github.io/illustrated-transformer/"
+        )
+        emb_model_name = emb_model_name or "sentence-transformers/all-mpnet-base-v2"
+        llm_repo_id = llm_repo_id or "google/flan-t5-large"
+        # self.tokenizer = RagTokenizer.from_pretrained(emb_model_name)
+        # self.model = RagTokenForGeneration.from_pretrained(emb_model_name)
+
         self.loader = WebBaseLoader(web_loader_url)
-        self.embedding_model_name = embedding_model_name
+        self.emb_model_name = emb_model_name
+        self.llm_repo_id = llm_repo_id
         self._hf_api_key = hf_api_key
+
         self._setup_chain()
 
     def _setup_chain(self):
         data = self.loader.load()
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=0)
         all_splits = text_splitter.split_documents(data)
+        model_kwargs = {"device": "cpu"}
+        encode_kwargs = {"normalize_embeddings": False}
+        hf_embeddings = HuggingFaceEmbeddings(
+            model_name=self.emb_model_name,
+            model_kwargs=model_kwargs,
+            encode_kwargs=encode_kwargs,
+        )
+        loader = WebBaseLoader("http://jalammar.github.io/illustrated-transformer/")
+        data = loader.load()
 
-        hf_embeddings = HuggingFaceEmbeddings(model_name=self.embedding_model_name)
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=0)
+        all_splits = text_splitter.split_documents(data)
         vectorstore = FAISS.from_documents(
             documents=all_splits, embedding=hf_embeddings
         )
 
         llm = HuggingFaceHub(
-            repo_id=self.model_name, huggingfacehub_api_token=self._hf_api_key
+            repo_id=self.llm_repo_id, huggingfacehub_api_token=self._hf_api_key
         )
         memory = ConversationSummaryMemory(
             llm=llm, memory_key="chat_history", return_messages=True
         )
-
-        self.chat_chain = ConversationalRetrievalChain.from_llm(
-            llm=llm, retriever=vectorstore.as_retriever(), memory=memory, verbose=True
+        self.chat_chain = RetrievalQA.from_chain_type(
+            llm, retriever=vectorstore.as_retriever()
         )
 
     def generate_response(self, message: str, conversation_history: list) -> str:
-        response = self.chat_chain(message)
-        return json.dumps({"response": response})
+        input_text = " ".join(
+            [turn["content"] for turn in conversation_history] + [message]
+        )
+        response = self.chat_chain(input_text)["result"]
+        return response
